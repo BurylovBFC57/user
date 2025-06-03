@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="js/tailwindcss.js"></script>
+    <script src="js/alpine.js" defer></script>
+</head>
+<body x-data="">
+    <header class="grid grid-cols-[auto_1fr_auto] bg-cyan-500 text-white py-2 px-2 md:px-[6%]">
+        <a href="#">api<span class="font-bold">POST</span> </a>
+        <nav class="justify-self-center space-x-6">
+            <a href="pages/admin.html">Admin Panel</a>
+            <a href="pages/user.html">User Panel</a>
+        </nav>
+        <ul class="flex gap-x-6">
+            <li><a href="pages/register.html">Register</a></li>
+            <li><a href="pages/login.html">Login</a></li>
+        </ul>
+    </header>
+    <main class="grid gap-y-8 py-8 px-2 md:px-[6%]">
+        <h1 class="text-3xl font-bold">Home</h1>
+        
+        <section
+        x-data="{
+            host: 'https://test.informat74.ru/api',
+            posts: {},
+            async download(){
+                let response = await fetch(`${this.host}/posts`)
+                response = await response.json()
+                console.log(response.posts)
+                this.posts = response.posts
+                this.pages = Math.round(this.posts.length / 10)
+                if(this.posts.length % 10 > 0){
+                    this.pages = this.pages + 1
+                }
+            },
+            maxText(text, maxLength){
+                if(text.length > maxLength){
+                    return text.substring(0, maxLength) + '...';
+                }
+                return text;
+            },
+            count: 10,
+            pages: 0,
+            curentPage: 0,
+            loadPage(page){
+                return this.post.slice(page*this.count+1, this.count)
+            },
+            funCurentPage(page){
+                this.curentPage = page
+            }
+        }"
+        >
+        <button
+        x-on:click="download()" class="grid bg-cyan-500 p-2 text-white rounded-md w-1/3 cursor-pointer">Download</button>
+        <ul class="flex gap-x-4 justify-self-center">
+            <template x-for="(page, index) in pages">
+                <li x-show="funCurentPage(index)" class="p-2 bg-cyan-500 rounded cursor-pointer text-white" x-text="index"></li>
+            </template>
+        </ul>
+            <h2>All posts</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="post in posts">
+                <article class="grid grid-rows-[1fr_auto_1fr_1fr] gap-y-2 bg-cyan-100 p-6 rounded">
+                    <h3 class="text-xl font-bold" x-text="post.title"></h3>
+                    <img class="object-cover h-full w-full rounded p-2" x-bind:src="post.image" alt="">
+                    <p x-text="maxText(post.body, 250)" class="p-2"></p>
+                    <div class="grid grid-cols-[auto_auto] p-2 items-end">
+                        <span class="flex gap-1">
+                            <p class="font-bold">User:</p> <span x-text="post.user"></span>
+                        </span>
+                        <span class="flex justify-self-end gap-1">
+                            <p class="font-bold">Category:</p> <span x-text="post.category"></span>
+                        </span>
+                    </div>
+                </article>                    
+                </template>
+
+
+            </div>
+        </section>
+    </main>
+</body>
+</html>
