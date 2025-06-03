@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../js/tailwindcss.js"></script>
+    <script src="../js/alpine.js" defer></script>
+</head>
+<body x-data="{
+  host: 'https://test.informat74.ru/api',
+    user: JSON.parse(localStorage.getItem('user')) ,
+    categories: [
+      {id: 1, name: 'Category1'},
+      {id: 2, name: 'Category2'},
+      {id: 3, name: 'Category3'},
+      {id: 4, name: 'Category4'},
+    ],
+    token: localStorage.getItem('token'),
+    logout(){
+      localStorage.clear()
+      location.assign('../index.html')
+    }
+  }">
+    <header class="grid grid-cols-[auto_1fr_auto] bg-cyan-500 text-white py-2 px-2 md:px-[6%]">
+      <a href="../index.html">api<span class="font-bold">POST</span> </a>
+      <nav class="justify-self-center space-x-4">
+          <a href="">UserPanel</a>
+      </nav>
+      <ul class="flex gap-x-4">
+          <li><a href="" x-on:click.prevent="logout()">Exit</a></li>
+      </ul>
+    </header>
+    <main class="grid gap-y-8 py-8 px-2 md:px-[6%]">
+      <h1 class="text-3xl font-bold">UserPanel</h1>
+      <section class="grid grid-cols-1 md:grid-cols-[1fr_3fr] gap-x-4 bg-cyan-100 p-4">
+        <img x-bind:src="user.avatar" alt="" class="object-cover h-full w-full rounded-sm border-6 border-cyan-500">
+        <ul class="self-center">
+          <template x-for="(item,key) in user">
+            <li class="flex gap-x-2" x-show="(key != 'avatar') & (key != 'posts')">
+              <h3 x-text="key" class="font-bold"></h3>
+              <span x-text="item"></span>
+            </li>
+          </template>
+          <li class="flex gap-x-2">
+              <h3 x-text="'Token'" class="font-bold"></h3>
+              <span x-text="token"></span>
+            </li>
+        </ul>
+      </section>
+      <section x-data="{
+        isCreate: false,
+        errors: {},
+        async createPost(){
+          this.isCreate = !this.isCreate
+          if(this.isCreate == true){
+            let response = await fetch(`https://test.informat74.ru/api/categories`)
+            response = await response.json()
+            this.categories = response.data
+          }
+          
+        },
+        async savePost(){
+          let response = await fetch(`https://test.informat74.ru/api/posts`,{
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${this.token}`
+            },
+            body: new FormData($refs.form)
+          })
+
+          response = await response.json()
+          console.log(response)
+          if(response.errors){
+            this.errors = response.errors
+          }else{
+            this.isCreate = false
+          }
+
+        }
+      }">
+        <button
+        x-on:click="createPost()"
+        class="bg-cyan-500 text-white cursor-pointer p-2">Add Post</button>
+        <div x-show="isCreate" class="">
+        <h2>Create Post</h2>
+        <form x-ref="form" x-on:submit.prevent="savePost()" enctype="multipart/form-data">
+          <div class="grid">
+            <input type="text" name="title" placeholder="Title" class="border p-1">
+            <template x-for="error in errors.title">
+              <span class="text-red-500" x-text="error"></span>
+          </template>
+          </div>
+          <div class="grid">
+            <textarea name="body" placeholder="Description" class="border p-1"></textarea>
+            <template x-for="error in errors.body">
+              <span class="text-red-500" x-text="error"></span>
+          </template>
+          </div>
+          <div class="grid">
+            <input type="file" name="image" class="bg-cyan-500 text-white p-1">
+            <template x-for="error in errors.image">
+              <span class="text-red-500" x-text="error"></span>
+          </template>
+          </div>
+          <div class="grid">
+            <label for="">
+              <span>Published</span>
+              <input type="checkbox" name="is_published" value="1" checked class="h-5 w-5">
+            </label>
+            <template x-for="error in errors.is_published">
+              <span class="text-red-500" x-text="error"></span>
+          </template>
+          </div>
+          <div class="grid">
+            <input type="text" name="user_id" x-bind:value="user.id" hidden>
+          </div>
+          <div class="grid">
+            <select name="category_id" class="border p-1">
+              <template x-for="category in categories">
+                <option x-bind:value="category.id" x-text="category.name"></option>
+              </template>
+            </select>
+            <template x-for="error in errors.category_id">
+            <span class="text-red-500" x-text="error"></span>
+            </template>
+          </div>
+          <div class="grid">
+            <button class="bg-cyan-500 text-white cursor-pointer p-2">Create Post</button>
+          </div>
+        </form>          
+        </div>
+
+      </section>
+      <section class="border-2 border-cyan-500 p-4 rounded"
+      x-data="{
+        message: '',
+        errors: {},
+        async removePassword(){
+          let response = await fetch(`${host}/users/${this.user.id}/password`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${this.token}`,
+            },
+            body: new FormData($refs.password)
+          })
+          if(response.status == '401'){
+            response = await response.json()
+            this.message = response.message
+          }
+          if(response.status == '400'){
+            response = await response.json()
+            this.errors = response.errors
+          }
+          else{
+            this.message = 'Пароль изменен'
+          }
+
+        }
+      }"
+      >
+        <h2 class="text-2xl font-bold">
+          Смена пароля
+        <span x-text="message" class="text-cyan-500"></span>
+        </h2>
+        <form
+        x-on:submit.prevent="removePassword()"
+        x-ref="password"
+        class="grid gap-y-2">
+        <div class="grid">
+          <input type="password" class="border-b p-1" name="password">
+          <template x-for="error in errors.password">
+            <span class="text-red-500" x-text="error"></span>
+          </template>
+          
+        </div>
+        <div class="grid">
+          <button class="bg-cyan-500 text-white p-2 rounded">Сменить пароль</button>
+        </div>
+        </form>
+      </section>
+      <section
+      x-data="{
+        message: '',
+        errors: {},
+        async removeUser(){
+          let response = await fetch(`${host}/users/${this.user.id}/password`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${this.token}`,
+            },
+            body: new FormData($refs.password)
+          })
+          if(response.status == '401'){
+            response = await response.json()
+            this.message = response.message
+          }
+          if(response.status == '400'){
+            response = await response.json()
+            this.errors = response.errors
+          }
+          else{
+            this.message = 'Данные изменены'
+          }
+
+        }
+      }"
+      class="border-2 border-cyan-500 p-4 rounded">
+        <h2 class="text-2xl font-bold">Uplate <span x-text="user.name"></span></h2>
+        <form
+        x-on:submit.prevent="removeUser()"
+        x-ref="password"
+        class="grid gap-y-2">
+        <div class="grid">
+          <input type="text" class="border-b p-1" name="name" :value="user.name">
+          <template x-for="error in errors.name">
+            <span class="text-red-500" x-text="error"></span>
+          </template>
+          
+        </div>
+        <div class="grid">
+          <input type="text" class="border-b p-1" name="email" :value="user.email">
+          <template x-for="error in errors.email">
+            <span class="text-red-500" x-text="error"></span>
+          </template>
+          
+        </div>
+        <div class="grid">
+          <input type="file" class="border-b p-1" name="avatar">
+          <template x-for="error in errors.avatar">
+            <span class="text-red-500" x-text="error"></span>
+          </template>
+          
+        </div>
+        <div class="grid">
+          <button class="bg-cyan-500 text-white p-2 rounded">Сменить данные</button>
+        </div>
+      </form>
+      </section>
+    </main>
+  </body>
+  </html>
